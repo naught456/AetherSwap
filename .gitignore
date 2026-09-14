@@ -1,0 +1,33 @@
+config/credentials.json
+config/app_config.json
+config/accounts.json
+config/playwright_steam/
+config/playwright_buff/
+
+# 数据库与缓存
+config/app.db
+config/app.db-journal
+config/app.db-wal
+config/app.db-shm
+config/exchange_rate.json
+config/steam_userdata.json
+config/holdings_report_last.json
+config/buff_request_policy.json
+config/buff_request_policy.json.tmp
+config/.buff_request_policy.json.*.tmp
+config/buff_checkout_guard.json
+config/buff_checkout_guard.json.lock
+config/.buff_checkout_guard.json.*.tmp
+config/.credentials.json.*.tmp
+config/transactions.json.bak
+config/steam_deals_checkpoint.json
+config/steam_deals_checkpoint.json.tmp
+
+# 日志
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
