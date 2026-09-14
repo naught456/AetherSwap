@@ -1079,12 +1079,27 @@ def _do_payment_notify_and_wait(
         email_pass = (notify_cfg.get("email_pass") or "").strip()
         timeout_sec = int(notify_cfg.get("email_timeout_seconds", 300))
         if email_user and email_pass:
+            email_round_done = threading.Event()
+
             def _email_waiter() -> None:
-                res = wait_email_command(config, timeout_seconds=timeout_sec, is_stop_requested=is_stop_requested, log_fn=log_fn)
+                res = wait_email_command(
+                    config,
+                    timeout_seconds=timeout_sec,
+                    is_stop_requested=lambda: is_stop_requested() or email_round_done.is_set(),
+                    log_fn=log_fn,
+                )
+                if email_round_done.is_set():
+                    # 本轮付款确认已由手动点击（或停止）解决，
+                    # 丢弃过期的邮件监听结果，避免误伤下一轮付款等待
+                    return
                 confirm_payment(res == "success")
+
             t = threading.Thread(target=_email_waiter, daemon=True)
             t.start()
-            ok = wait_payment_confirm()
+            try:
+                ok = wait_payment_confirm()
+            finally:
+                email_round_done.set()
         else:
             ok = wait_payment_confirm(timeout_seconds=timeout_sec)
         if log_fn:

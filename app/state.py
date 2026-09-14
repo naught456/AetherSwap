@@ -28,6 +28,7 @@ class State:
     _log_seq: int
     _pending_payment: Optional[dict]
     _user_confirmed: Optional[bool]
+    _confirm_wait_active: bool
     _stop_requested: bool
     _plan: List[Any]
     _inventory: List[Any]
@@ -47,6 +48,7 @@ class State:
         self._log_seq = 0
         self._pending_payment = None
         self._user_confirmed = None
+        self._confirm_wait_active = False
         self._stop_requested = False
         self._plan = []
         self._inventory = []
@@ -153,23 +155,32 @@ class State:
     def wait_payment_confirm(self, timeout_seconds: Optional[float] = None) -> bool:
         with self._confirm:
             self._user_confirmed = None
-            deadline = (time.time() + timeout_seconds) if timeout_seconds is not None else None
-            while True:
-                if self._user_confirmed is not None:
-                    return self._user_confirmed is True
-                if self._stop_requested:
-                    return False
-                if deadline is not None and time.time() >= deadline:
-                    return False
-                wait_time = 1.0
-                if deadline is not None:
-                    remaining = deadline - time.time()
-                    if remaining <= 0:
+            self._confirm_wait_active = True
+            try:
+                deadline = (time.time() + timeout_seconds) if timeout_seconds is not None else None
+                while True:
+                    if self._user_confirmed is not None:
+                        return self._user_confirmed is True
+                    if self._stop_requested:
                         return False
-                    wait_time = min(1.0, remaining)
-                self._confirm.wait(timeout=wait_time)
+                    if deadline is not None and time.time() >= deadline:
+                        return False
+                    wait_time = 1.0
+                    if deadline is not None:
+                        remaining = deadline - time.time()
+                        if remaining <= 0:
+                            return False
+                        wait_time = min(1.0, remaining)
+                    self._confirm.wait(timeout=wait_time)
+            finally:
+                self._confirm_wait_active = False
     def confirm_payment(self, ok: bool) -> None:
         with self._confirm:
+            if not self._confirm_wait_active:
+                # 当前没有等待中的付款确认（本轮已结束），
+                # 忽略过期回调（例如上一轮邮件监听超时迟到的结果），
+                # 避免误伤下一轮付款等待
+                return
             self._user_confirmed = ok
             self._confirm.notify_all()
     def request_stop(self) -> None:
