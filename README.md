@@ -150,9 +150,12 @@
 **第 1 步：克隆项目**
 
 ```bash
-git clone https://github.com/vexed-wilson/AetherSwap.git
+git clone https://github.com/naught456/AetherSwap.git
 cd AetherSwap
 ```
+
+> 💡 如果你之前是从 Gitee 同步的旧仓库，也可以继续使用：  
+> `git clone https://gitee.com/vexed-wilson/AetherSwap.git`
 
 **第 2 步：安装依赖**
 
